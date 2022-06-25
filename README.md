@@ -1,32 +1,29 @@
 # Docker VPN Settings
 
+## Setup
+
+1. Rename `.env.exmaple` to `.env`
+2. Edit the variables as you see fit.
+
 ## Settings
 
 1. Use the attached `docker-compose.yaml` to build things.
-2. Set firewall to allow passthrough of port `1194/udp`.
+2. Set firewall to allow passthrough of port `51820/udp`.
 3. Configure automatic updates to docker images.
 
 ## Containers
 
 We have two needs for this, a secure tunnel and a dynamic dns updater.
 
-### [openvpn-as](https://hub.docker.com/r/linuxserver/openvpn-as)
-
-I'm currently using this official OpenVPN tunnel, but I dislike that it limits to two users and it won't be that hard to set up my own using a debian based build.
-
-1. Follow the instructions to wipe the default admin.
-2. Follow these [instructions](https://github.com/linuxserver/docker-openvpn-as/issues/96) to set up for local access.
-   > In the web gui, only change the hostname under network settings and add your subnet to routing (with nat) under vpn settings. Don't change anything else. Definitely don't change dynamic ip address network
-3. Create users with passwords, log in as users to download `.ovpn` profiles.
-4. Use `.ovpn` profiles in whatever client app you want.
-
 ### [ddclient](https://hub.docker.com/r/linuxserver/ddclient)
 
-This can handle basically any ddns provider. I started with duckdns but gtet weird routing issues on things, no-ip works better.
+This can handle basically any ddns provider. I started with duckdns but got weird routing issues on things, no-ip works better.
 
 Note, the `use=` key needs to be defined BEFORE the rest of the keys.
 
 #### duckdns
+
+**TEST FAILURE**
 
 ```ini
 ##
@@ -55,9 +52,24 @@ protocol=dyndns2
 server=dynupdate.no-ip.com
 login=<YOURUSERNAME>
 password=<YOURPASSWORD>
-your_domain.com
+<YOURFQDN> # the ddns fqdn, eg. something.noip.org
 ```
 
-## Future Plans
+## Wireguard
 
-I really dislike the limitations of OpenVPN-AS, so I'll probably just grab the community build of `openvpn` and roll my own container. Settings should be pretty easy to script up. We'll see how lazy I remain. Could be a fun use of Jenkins to do regular rebuilds...
+https://hub.docker.com/r/linuxserver/wireguard
+
+Had to install a couple things and reboot. Follow the steps here for your OS: https://www.wireguard.com/install/
+
+```bash
+sudo yum install kmod-wireguard wireguard-tools
+```
+
+Also had to add portforwarding on my router as described above for `51820/UDP`.
+
+After that, I can just change the number of clients to generate. I think I can provide a list of names as well.
+It'll spit out some QR codes that I just need to scan to add to the [phone app](https://play.google.com/store/apps/details?id=com.wireguard.android&hl=en_US&gl=US). The QR codes are located in under the docker configs folder for this container, I've got them going under a folder called `wireguard`.
+
+I also found this other container:
+
+- https://old.reddit.com/r/selfhosted/comments/ug5vz8/setting_up_a_vpn_for_homelab/
