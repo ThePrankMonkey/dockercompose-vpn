@@ -1,5 +1,5 @@
 ---
-version: "2.1"
+version: "3"
 services:
   ddclient:
     image: ghcr.io/linuxserver/ddclient
@@ -12,7 +12,8 @@ services:
       - ${PATH_CONFIG}/ddclient:/config
     restart: unless-stopped
   wireguard:
-    image: lscr.io/linuxserver/wireguard
+    # image: lscr.io/linuxserver/wireguard
+    image: linuxserver/wireguard
     container_name: wireguard
     cap_add:
       - NET_ADMIN
@@ -25,13 +26,40 @@ services:
       - SERVERPORT=${VPN_PORT} #optional
       - PEERS=2 #optional
       - PEERDNS=auto #optional
+      # - PEERDNS=192.168.86.79 #optional
       - INTERNAL_SUBNET=${INTERNAL_SUBNET} #optional
       - ALLOWEDIPS=0.0.0.0/0 #optional
+      - PERSISTENTKEEPALIVE_PEERS=all #optional
+      - LOG_CONFS=true #optional
     volumes:
       - ${PATH_CONFIG}/wireguard:/config
       - /lib/modules:/lib/modules
     ports:
-      - ${VPN_PORT}:${VPN_PORT}/udp
+      - ${VPN_PORT}:51820/udp
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
     restart: unless-stopped
+    networks:
+    - proxynet
+
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8053:80/tcp"
+    environment:
+      TZ: ${TIME_ZONE}
+      # WEBPASSWORD: 'set a secure password here or it will be random'
+    volumes:
+      - './etc-pihole:/etc/pihole'
+      - './etc-dnsmasq.d:/etc/dnsmasq.d'
+    restart: unless-stopped
+    networks:
+    - proxynet
+
+networks:
+  proxynet:
+    name: proxynet
+    external: true
